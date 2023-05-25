@@ -100,7 +100,7 @@ def check_game_state() -> bool:
     if lives < 1:
         StatusBar.display_loss_message(screen)
         return False
-
+    # Keep gaming
     return True
 
 # Main Loop ----------------------------------------------------------------------------------------
