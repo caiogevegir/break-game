@@ -2,106 +2,123 @@ import pygame
 import os.path
 import sys
 
+from components.background import Background
+from components.statusbar import StatusBar
 from components.paddle import Paddle
 from components.ball import Ball
 from components.brick import Brick
 
 BASE_PATH = os.path.dirname(__file__)
 ASSETS_PATH = os.path.join(BASE_PATH, 'assets')
+CONTENT_PATH = {
+    'background': os.path.join(ASSETS_PATH, 'bg.png'),
+    'paddle': os.path.join(ASSETS_PATH, 'paddle.png'),
+    'ball': os.path.join(ASSETS_PATH, 'ball.png'),
+    'bricks': os.path.join(ASSETS_PATH, 'bricks.png')
+}
 
-WIDTH, HEIGHT, UNIT = 480, 640, 16
+# Game Setup ---------------------------------------------------------------------------------------
+
+WIDTH, HEIGHT = (480, 640)
 FPS = 60
-SPEED_INCREASE_RATE = 1.025
+BRICK_ROWS, BRICK_COLUMNS = (8, 7)
 
 score = 0
 lives = 3
 
 pygame.init()
 pygame.display.set_caption('Brek')
-running = True
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
+StatusBar.initialize_font()
 clock = pygame.time.Clock()
-font = pygame.font.SysFont('courier', 30)
 sprites_list = pygame.sprite.Group()
 bricks_list = pygame.sprite.Group()
 
-background = pygame.image.load(os.path.join(ASSETS_PATH, 'bg.png'))
-paddle = Paddle(
-    image=pygame.image.load(os.path.join(ASSETS_PATH, 'paddle.png')),
-    position=[240,560]
-)
-ball = Ball(
-    image=pygame.image.load(os.path.join(ASSETS_PATH, 'ball.png')),
-    position=[240,400],
-    velocity=[2,2]
-)
-
+background = Background(CONTENT_PATH['background'])
+paddle = Paddle(CONTENT_PATH['paddle'])
+ball = Ball(CONTENT_PATH['ball'])
+for i in range(BRICK_ROWS):
+    for j in range(BRICK_COLUMNS):
+        brick = Brick(CONTENT_PATH['bricks'], i, j)
+        bricks_list.add(brick)
+        sprites_list.add(brick)
 sprites_list.add(paddle)
 sprites_list.add(ball)
 
-for i in range(8):
-    for j in range(7):
-        brick = Brick(
-            image=pygame.image.load(os.path.join(ASSETS_PATH, 'bricks.png')).subsurface([0,32*(i%4)], [64,32]),
-            position=[(4 + 68*j),(48 + 36*i)]
-        )
-        sprites_list.add(brick)
-        bricks_list.add(brick)
+# Game Methods -------------------------------------------------------------------------------------
 
-# Game Loop
-while running:
-
-    # Events
+def process_game_events():
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
     
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-        paddle.move_left(UNIT, 0)
-    if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-        paddle.move_right(UNIT, WIDTH-96)
+    if keys[pygame.K_LEFT]:
+        paddle.move_left()
+    if keys[pygame.K_RIGHT]:
+        paddle.move_right()
 
-    # Logic
+
+def process_game_logic():
+    global lives, score
     sprites_list.update()
-    if ball.rect.x <= 0 or ball.rect.x >= WIDTH-16:
-        ball.bounce(Ball.CollisionDirection.X)
-    if ball.rect.y <= 0 or ball.has_collided_with_paddle(paddle):
-        ball.bounce(Ball.CollisionDirection.Y)
-    if ball.rect.y >= HEIGHT:
-        # Lose 1 life and restart
+    if ball.rect.x <= 0 or ball.rect.x >= WIDTH-Ball.size:
+        ball.bounce_horizontal()
+    elif ball.rect.y <= 0 or ball.has_collided_with_paddle(paddle):
+        ball.bounce_vertical()
+    elif ball.rect.y >= HEIGHT:
+        # Player missed the ball
+        pygame.time.wait(1000)
         lives -= 1
-        ball.rect.x, ball.rect.y = 240, 400 
+        ball.spawn()
+        paddle.spawn()
+        return
 
     brick_collision_list = pygame.sprite.spritecollide(ball, bricks_list, False)
     for brick in brick_collision_list:
         brick.kill()
-        ball.bounce(Ball.CollisionDirection.Y)
+        ball.bounce_vertical()
         score += 10
-        ball.increase_speed(SPEED_INCREASE_RATE)
+        ball.speed_up()
 
-    # Drawing
-    screen.blit(background, [0,0])
+
+def draw_content_on_screen():
+    background.draw(screen)
     sprites_list.draw(screen)
-    if len(bricks_list) == 0:
-        # Game Win
-        screen.blit(font.render('Ganhou! :)', True, (255,255,255)), [240,4])
-        running = False
-    elif lives < 0:
-        # Game Over
-        screen.blit(font.render('Game Over! :(', True, (255,255,255)), [240,4])
-        running = False
-    else:
-        screen.blit(font.render(f'{score}', True, (255,255,255)), [4,4])
-        screen.blit(font.render(f'\u2665 {lives}', True, (255,255,255)), [420, 4])
-    
-    # Update screen
-    pygame.display.flip()
-    # Framerate
-    clock.tick(FPS)
+    StatusBar.display_score(screen, score)
+    StatusBar.display_lives(screen, lives)
 
-pygame.time.wait(5000)
-pygame.quit()
-sys.exit()
+
+def check_game_state() -> bool:
+    # Win condition
+    if len(bricks_list) == 0:
+        StatusBar.display_win_message(screen)
+        return False
+    # Loss condition
+    if lives < 1:
+        StatusBar.display_loss_message(screen)
+        return False
+
+    return True
+
+# Main Loop ----------------------------------------------------------------------------------------
+
+def main():
+    running = True
+    while running:
+        process_game_events()
+        process_game_logic()
+        draw_content_on_screen()
+        running = check_game_state()
+        pygame.display.flip()
+        clock.tick(FPS)
+    pygame.time.wait(5000)
+    pygame.quit()
+    sys.exit()
+
+# --------------------------------------------------------------------------------------------------
+
+if __name__ == '__main__':
+    main()

@@ -7,4 +7,4 @@ As you destroy the bricks, the ball gets slightly faster.
 
 ## References
 
-I followed this tutorial on [101Computing](https://www.101computing.net/breakout-tutorial-using-pygame-getting-started/) and used customized assets.
+I followed this tutorial on [101Computing](https://www.101computing.net/breakout-tutorial-using-pygame-getting-started/) and made some improvements such as organization and custom assets.
