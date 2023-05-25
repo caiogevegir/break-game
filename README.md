@@ -5,7 +5,7 @@ Break game made on pygame.
 Use the left and right arrow keys to control the board and guide the ball to destroy the bricks.
 In addition, as you destroy them, the ball gets slightly faster.
 
-<img src="https://github.com/caiogevegir/break-game/assets/56521026/9ac14d05-b19b-4e52-b498-2131344ca9b9" alt="Brek" style="height: 320px; width:240px;"/>
+![brek](https://github.com/caiogevegir/break-game/assets/56521026/49938427-bfc3-42e6-ba44-d5a72c22128a)
 
 ## Known Issues
 
